@@ -1,0 +1,35 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Prepare web files
+        run: |
+          mkdir www
+          cp index.html style.css app.js store.js manifest.json sw.js icon-192.png icon-512.png www/
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npx cap init PhoneManager com.shop.phonemanager --web-dir www
+          npx cap add android
+          sed -i 's#<string name="app_name">.*</string>#<string name="app_name">موبایل‌یار</string>#' android/app/src/main/res/values/strings.xml
+      - name: Build APK
+        run: |
+          npx cap sync android
+          cd android
+          ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phone-manager-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
